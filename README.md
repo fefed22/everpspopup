@@ -1,6 +1,6 @@
-# Ever PS Popup for Prestashop 1.6 - 1.7 - 8
+# Ever PS Popup for PrestaShop 1.6 - 9
 
-Multilingual popup for Prestashop 1.6 & 1.7 - 8
+Multilingual popup for PrestaShop 1.6, 1.7, 8 and 9.
 
 https://www.team-ever.com/everpopup-module-popup-prestashop-gratuit/
 

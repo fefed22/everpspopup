@@ -25,6 +25,8 @@ require_once _PS_MODULE_DIR_.'everpspopup/everpspopup.php';
 
 class EverpspopupAjaxNewSubscribeModuleFrontController extends ModuleFrontController
 {
+    private $isSeven;
+
     public function initContent()
     {
         $this->isSeven = Tools::version_compare(_PS_VERSION_, '1.7', '>=') ? true : false;

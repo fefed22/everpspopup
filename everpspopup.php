@@ -28,6 +28,8 @@ class Everpspopup extends Module
     private $html;
     private $postErrors = [];
     private $postSuccess = [];
+    private $isSeven;
+    private $cookie_suffix;
     const IMG_FOLDER  = _PS_MODULE_DIR_.'everpspopup/views/img/';
     const POPUP_IMG  = _PS_MODULE_DIR_.'everpspopup/views/img/';
     const POPUP_VIEWS  = _PS_MODULE_DIR_.'everpspopup/views/';
@@ -36,17 +38,16 @@ class Everpspopup extends Module
     {
         $this->name = 'everpspopup';
         $this->tab = 'administration';
-        $this->version = '5.3.8';
+        $this->version = '5.4.3';
         $this->author = 'Team Ever';
         $this->need_instance = 0;
         $this->bootstrap = true;
+        $this->ps_versions_compliancy = ['min' => '1.6', 'max' => '9.99.99'];
         parent::__construct();
         $this->displayName = $this->l('Ever Popup');
         $this->description = $this->l('No doubt the most famous pop up module');
-        $this->ps_versions_compliancy = ['min' => '1.6', 'max' => _PS_VERSION_];
-        $this->isSeven = Tools::version_compare(_PS_VERSION_, '1.7', '>=') ? true : false;
-        $this->siteUrl = Tools::getHttpHost(true) . __PS_BASE_URI__;
-        $this->cookie_suffix = Tools::substr(Tools::encrypt('everpspopup/cookie'), 0, 10);
+        $this->isSeven = version_compare(_PS_VERSION_, '1.7', '>=');
+        $this->cookie_suffix = substr(hash('sha256', _COOKIE_KEY_.'everpspopup/cookie'), 0, 10);
     }
 
     /**
@@ -92,9 +93,10 @@ class Everpspopup extends Module
      * @param integer $idTabParent
      * @return boolean
      */
-    private function installModuleTab($tabClass, $tabName)
+    public function installModuleTab($tabClass, $tabName)
     {
-        $tab = new Tab();
+        $idTab = (int) Tab::getIdFromClassName($tabClass);
+        $tab = $idTab ? new Tab($idTab) : new Tab();
         $tab->class_name = $tabClass;
         $tab->module = $this->name;
         if ($this->isSeven) {
@@ -106,7 +108,8 @@ class Everpspopup extends Module
             $tab->name[(int) $lang['id_lang']] = $tabName;
         }
         $tab->position = Tab::getNewLastPosition($tab->id_parent);
-        return $tab->save();
+
+        return $idTab ? $tab->update() : $tab->add();
     }
 
     /**
@@ -151,8 +154,7 @@ class Everpspopup extends Module
                 $this->html .= $this->displayConfirmation($success);
             }
         }
-        $popup_admin_link  = 'index.php?controller=AdminEverPsPopup&token=';
-        $popup_admin_link .= Tools::getAdminTokenLite('AdminEverPsPopup');
+        $popup_admin_link = $this->context->link->getAdminLink('AdminEverPsPopup');
 
         $this->context->smarty->assign([
             'everpspopup_dir' => $this->_path,
@@ -185,7 +187,16 @@ class Everpspopup extends Module
 
         $helper->identifier = $this->identifier;
         $helper->submit_action = 'submitEverpspopupModule';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false) .'&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
+        $helper->currentIndex = $this->context->link->getAdminLink(
+            'AdminModules',
+            false,
+            [],
+            [
+                'configure' => $this->name,
+                'tab_module' => $this->tab,
+                'module_name' => $this->name,
+            ]
+        );
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
         $helper->tpl_vars = [
@@ -387,8 +398,10 @@ class Everpspopup extends Module
         } else {
             $background = false;
         }
-        $date = strtotime('Y-m-d H:i:s -' . (int) Configuration::get('EVERPSPOPUP_AGE').' year');
-        $date = date('Y-m-d H:i:s', $date);
+        $date = date(
+            'Y-m-d H:i:s',
+            strtotime('-' . (int) Configuration::get('EVERPSPOPUP_AGE').' years')
+        );
         $everpopup->cookie_suffix = $this->cookie_suffix;
         $this->smarty->assign(
             [

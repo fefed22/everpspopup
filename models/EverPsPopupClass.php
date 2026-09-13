@@ -54,7 +54,6 @@ class EverPsPopupClass extends ObjectModel
             'groups' => array(
                 'type' => self::TYPE_STRING,
                 'lang' => false,
-                'validate' => 'isAnything',
                 'required' => false
             ),
             'newsletter' => array(
@@ -76,7 +75,6 @@ class EverPsPopupClass extends ObjectModel
             ),
             'categories' => array(
                 'type' => self::TYPE_STRING,
-                'validate' => 'isAnything',
                 'required' => false
             ),
             'carrier' => array(
@@ -154,6 +152,7 @@ class EverPsPopupClass extends ObjectModel
             'ep.id_everpspopup = epl.id_everpspopup'
         );
         $sql->where('ep.active = 1');
+        $sql->where('ep.id_shop = '.(int)$id_shop);
         $sql->where('epl.id_lang = '.(int)$id_lang);
 
         return new self(
@@ -177,6 +176,7 @@ class EverPsPopupClass extends ObjectModel
             'ep.id_everpspopup = epl.id_everpspopup'
         );
         $sql->where('ep.active = 1');
+        $sql->where('ep.id_shop = '.(int)$id_shop);
         $sql->where('epl.id_lang = '.(int)$id_lang);
 
         return Db::getInstance()->executeS($sql);
@@ -235,11 +235,11 @@ class EverPsPopupClass extends ObjectModel
                 (int)$id_shop
             );
             $allowed_groups = json_decode($everpopup->groups);
-            if ($everpopup->date_start !='0000-00-00') {
-                if ($everpopup->date_start > $now
-                    || $everpopup->date_end < $now) {
-                    continue;
-                }
+            if (Validate::isDate($everpopup->date_start) && $everpopup->date_start > $now) {
+                continue;
+            }
+            if (Validate::isDate($everpopup->date_end) && $everpopup->date_end < $now) {
+                continue;
             }
             if (!is_array($allowed_groups)
                 || count($allowed_groups) <= 0
@@ -266,24 +266,24 @@ class EverPsPopupClass extends ObjectModel
         $popup_groups = [];
         foreach ($ps_groups as $ps_group) {
             $group = new Group(
-                (int)$ps_group,
+                (int)$ps_group['id_group'],
                 (int)Context::getContext()->language->id,
                 (int)Context::getContext()->shop->id
             );
-            if (!in_array($group->id, $popup_groups)) {
+            if (!isset($popup_groups[$group->id])) {
                 $popup_groups[$group->id] = array(
                     'id_group' => $group->id,
                     'name' => $group->name
                 );
             }
         }
-        foreach (json_decode($popup->groups) as $p_group) {
+        foreach ((array)json_decode($popup->groups) as $p_group) {
             $group = new Group(
                 (int)$p_group,
                 (int)Context::getContext()->language->id,
                 (int)Context::getContext()->shop->id
             );
-            if (!in_array($group->id, $popup_groups)) {
+            if (!isset($popup_groups[$group->id])) {
                 $popup_groups[$group->id] = array(
                     'id_group' => $group->id,
                     'name' => $group->name

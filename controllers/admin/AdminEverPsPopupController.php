@@ -25,6 +25,9 @@ require_once _PS_MODULE_DIR_.'everpspopup/models/EverPsPopupClass.php';
 class AdminEverPsPopupController extends ModuleAdminController
 {
     private $html;
+    private $isSeven;
+    private $module_name;
+    private $success = [];
     const POPUP_IMG  = _PS_MODULE_DIR_.'everpspopup/views/img/';
     const POPUP_VIEWS  = _PS_MODULE_DIR_.'everpspopup/views/';
     public function __construct()
@@ -34,9 +37,11 @@ class AdminEverPsPopupController extends ModuleAdminController
         $this->table = 'everpspopup';
         $this->module_name = 'everpspopup';
         $this->className = 'EverPsPopupClass';
-        $this->context = Context::getContext();
         $this->identifier = 'id_everpspopup';
-        $this->isSeven = Tools::version_compare(_PS_VERSION_, '1.7', '>=') ? true : false;
+        $this->isSeven = version_compare(_PS_VERSION_, '1.7', '>=');
+
+        parent::__construct();
+
         $this->context->smarty->assign(array(
             'everpspopup_dir' => _MODULE_DIR_ . '/everpspopup/'
         ));
@@ -62,13 +67,18 @@ class AdminEverPsPopupController extends ModuleAdminController
         );
 
         $this->colorOnBackground = true;
-        $module_link  = 'index.php?controller=AdminModules&configure=everpspopup&token=';
-        $module_link .= Tools::getAdminTokenLite('AdminModules');
+        $module_link = $this->context->link->getAdminLink(
+            'AdminModules',
+            true,
+            [],
+            [
+                'configure' => $this->module_name,
+                'module_name' => $this->module_name,
+            ]
+        );
         $this->context->smarty->assign(array(
             'module_link' => $module_link
         ));
-
-        parent::__construct();
     }
 
     public function l($string, $class = null, $addslashes = false, $htmlentities = true)
@@ -136,7 +146,10 @@ class AdminEverPsPopupController extends ModuleAdminController
 
         $this->html .= $this->context->smarty->fetch(self::POPUP_VIEWS.'templates/admin/header.tpl');
         $module_instance = Module::getInstanceByName($this->module_name);
-        if ($module_instance->checkLatestEverModuleVersion($this->module_name, $module_instance->version)) {
+        if ($module_instance
+            && method_exists($module_instance, 'checkLatestEverModuleVersion')
+            && $module_instance->checkLatestEverModuleVersion($this->module_name, $module_instance->version)
+        ) {
             $this->html .= $this->context->smarty->fetch(
                 _PS_MODULE_DIR_
                 .'/'
@@ -444,7 +457,7 @@ class AdminEverPsPopupController extends ModuleAdminController
             ) {
                 $groups = Group::getGroups(
                     (int)Context::getContext()->language->id,
-                    (int)$shop['id_shop']
+                    (int)Context::getContext()->shop->id
                 );
                 $group_condition = [];
                 foreach ($groups as $group) {
